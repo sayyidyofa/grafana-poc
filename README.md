@@ -2,7 +2,7 @@
 
 This repository contains a complete development environment setup for running two todo applications:
 1. PHP Todo App (CodeIgniter)
-2. React/Express Todo App
+2. NodeJS Todo App (Express)
 
 ## Prerequisites
 
@@ -25,30 +25,18 @@ brew install vagrant virtualbox ansible
 
 2. Clone this repository:
 ```bash
-git clone <your-repo-url>
-cd <repo-directory>
+git clone https://github.com/sayyidyofa/grafana-poc
+cd grafana-poc
 ```
 
-3. Create the directory structure:
-```bash
-mkdir -p apps/php-todo apps/react-todo
-```
-
-4. Clone the PHP todo app:
-```bash
-git clone https://github.com/sayyidyofa/codeigniter-todolist apps/php-todo
-```
-
-5. Copy the React todo app files into apps/react-todo
-
-6. Add local DNS entries:
+3. Add local DNS entries (the ip address is according to `inventory/hosts.yml`):
 ```bash
 # Add to /etc/hosts
 192.168.56.10 phptodo.local
 192.168.56.10 reacttodo.local
 ```
 
-7. Start the development environment:
+4. Start the development environment:
 ```bash
 vagrant up
 ansible-playbook -i inventory/hosts.yml playbooks/site.yml
@@ -57,40 +45,38 @@ ansible-playbook -i inventory/hosts.yml playbooks/site.yml
 ## Accessing the Applications
 
 - PHP Todo App: http://phptodo.local
-- React Todo App: http://reacttodo.local
+- React Todo App: http://nodetodo.local
 
 ## Directory Structure
 
 ```
 .
 ├── Vagrantfile
-├── ansible.cfg
 ├── apps/
 │   ├── php-todo/
-│   └── react-todo/
+│   └── node-todo/
 ├── inventory/
 │   └── hosts.yml
 ├── playbooks/
 │   └── site.yml
-└── templates/
-    ├── nginx-php-todo.conf.j2
-    └── nginx-react-todo.conf.j2
 ```
 
 ## Development Workflow
 
 1. The applications' source code is mounted into the VM, so you can edit the code on your host machine using your preferred IDE.
-2. Changes to the PHP app will be reflected immediately.
-3. For the React app, you'll need to rebuild after changes:
-   ```bash
-   vagrant ssh
-   cd /var/www/react-todo
-   npm run build
-   ```
-
+2. Changes to the apps will be reflected immediately.
 ## Database Access
 
 MariaDB is configured with the following credentials:
+
+(PHP app)
+
+- Database: db_todolist
+- Username: todouser_php
+- Password: todo_password_php
+
+(Node app)
+
 - Database: tododb
 - Username: todouser
 - Password: todopass
