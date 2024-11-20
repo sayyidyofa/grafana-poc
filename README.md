@@ -1,4 +1,4 @@
-# Development Environment Setup
+# Grafana Observability POC
 
 This repository contains a complete development environment setup for running two todo applications:
 1. PHP Todo App (CodeIgniter)
