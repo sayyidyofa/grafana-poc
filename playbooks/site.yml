@@ -1,0 +1,136 @@
+- name: Setup development environment
+  hosts: dev_vm
+  become: yes
+
+  vars:
+    mariadb_root_password: "rootpass123"
+    todo_db_user: "todouser"
+    todo_db_password: "todopass"
+    todo_db_name: "tododb"
+    todo_db_php: "db_todolist"
+    ansible_python_interpreter: "/usr/bin/python3.10"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install system dependencies
+      apt:
+        name: "{{ packages }}"
+        state: present
+      vars:
+        packages:
+          - nginx
+          - php-fpm
+          - php-mysql
+          - nodejs
+          - npm
+          - git
+          - build-essential
+          - python3-pip
+          - pkg-config
+          - mariadb-server
+          - mariadb-client
+          - libmysqlclient-dev
+
+    - name: python deps
+      pip:
+        name:
+          - PyMySQL
+
+    - name: Install pm2 globally
+      npm:
+        name: pm2
+        global: true
+
+    - name: Configure MariaDB
+      block:
+        - name: Start MariaDB
+          service:
+            name: mariadb
+            state: started
+            enabled: yes
+
+        - name: Create node app database
+          mysql_db:
+            name: "{{ todo_db_name }}"
+            state: present
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+        - name: Create node app database user
+          mysql_user:
+            name: "{{ todo_db_user }}"
+            password: "{{ todo_db_password }}"
+            priv: "{{ todo_db_name }}.*:ALL"
+            host: "%"
+            state: present
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+        - name: Import database schema for Node app
+          mysql_db:
+            name: "{{ todo_db_name }}"
+            state: import
+            target: /var/www/node-todo/schema.sql
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+        - name: Create PHP app database
+          mysql_db:
+            name: "{{ todo_db_php }}"
+            state: present
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+        - name: Access for PHP app database user
+          mysql_user:
+            name: todouser_php
+            password: todo_password_php
+            priv: "{{ todo_db_php }}.*:ALL"
+            host: "%"
+            state: present
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+        - name: Import database schema for PHP app
+          mysql_db:
+            name: "{{ todo_db_php }}"
+            state: import
+            target: /var/www/php-todo/database/db_todolist.sql
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Configure PHP Todo App
+      block:
+        - name: Configure PHP PM2 process
+          shell:
+            cmd: bash start.sh
+          args:
+            chdir: /var/www/php-todo
+        - name: Configure Nginx for PHP app
+          template:
+            src: templates/nginx-php-todo.conf.j2
+            dest: /etc/nginx/sites-available/php-todo.conf
+
+        - name: Enable PHP todo site
+          file:
+            src: /etc/nginx/sites-available/php-todo.conf
+            dest: /etc/nginx/sites-enabled/php-todo.conf
+            state: link
+
+    - name: Configure Node Todo App
+      block:
+      - name: Configure Node PM2 process
+        command: bash start.sh
+        args:
+          chdir: /var/www/node-todo
+      - name: Configure Nginx for node app
+        template:
+          src: templates/nginx-node-todo.conf.j2
+          dest: /etc/nginx/sites-available/node-todo.conf
+      - name: Enable node todo site
+        file:
+          src: /etc/nginx/sites-available/node-todo.conf
+          dest: /etc/nginx/sites-enabled/node-todo.conf
+          state: link
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted

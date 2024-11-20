@@ -1,0 +1,11 @@
+{
+    "name": "react-todo-backend",
+    "dependencies": {
+        "cors": "^2.8.5",
+        "express": "^4.21.1",
+        "mysql2": "^3.11.4"
+    },
+    "scripts": {
+        "start": "node server.js"
+    }
+}

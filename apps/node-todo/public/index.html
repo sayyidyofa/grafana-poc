@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Todo App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .todo-form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        .todo-list {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .todo-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .todo-item:last-child {
+            border-bottom: none;
+        }
+
+        .todo-item.completed {
+            background-color: #f9f9f9;
+        }
+
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        .todo-text {
+            flex-grow: 1;
+        }
+
+        .delete-btn {
+            background: #ff4444;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .delete-btn:hover {
+            background: #cc0000;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Todo List</h1>
+
+    <div class="todo-form">
+        <div class="form-group">
+            <label for="titleInput">Todo Title</label>
+            <input type="text" id="titleInput" placeholder="Todo title" required>
+        </div>
+        <div class="form-group">
+            <label for="descriptionInput">Description</label>
+            <input type="text" id="descriptionInput" placeholder="Description">
+        </div>
+        <button onclick="addTodo()">Add Todo</button>
+    </div>
+
+    <div id="todoList" class="todo-list">
+        <!-- Todos will be inserted here -->
+    </div>
+
+    <script>
+        const API_URL = '/api';
+
+        // Fetch all todos
+        async function fetchTodos() {
+            try {
+                const response = await axios.get(`${API_URL}/todos`);
+                const todoList = document.getElementById('todoList');
+                todoList.innerHTML = response.data.map(todo => `
+                    <div class="todo-item ${todo.completed ? 'completed' : ''}" id="todo-${todo.id}">
+                        <input
+                            type="checkbox"
+                            class="checkbox"
+                            ${todo.completed ? 'checked' : ''}
+                            onchange="toggleTodo(${todo.id}, ${todo.completed})"
+                        >
+                        <div class="todo-text">
+                            <strong>${escapeHtml(todo.title)}</strong>
+                            ${todo.description ? `<br><span>${escapeHtml(todo.description)}</span>` : ''}
+                        </div>
+                        <button class="delete-btn" onclick="deleteTodo(${todo.id})">Delete</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error fetching todos:', error);
+                alert('Failed to load todos');
+            }
+        }
+
+        // Add new todo
+        async function addTodo() {
+            const titleInput = document.getElementById('titleInput');
+            const descriptionInput = document.getElementById('descriptionInput');
+
+            const title = titleInput.value.trim();
+            const description = descriptionInput.value.trim();
+
+            if (!title) return;
+
+            try {
+                await axios.post(`${API_URL}/todos`, { title, description });
+                titleInput.value = '';
+                descriptionInput.value = '';
+                await fetchTodos();
+            } catch (error) {
+                console.error('Error adding todo:', error);
+                alert('Failed to add todo');
+            }
+        }
+
+        // Toggle todo completion
+        async function toggleTodo(id, currentStatus) {
+            try {
+                await axios.put(`${API_URL}/todos/${id}`, { completed: !currentStatus });
+                await fetchTodos();
+            } catch (error) {
+                console.error('Error toggling todo:', error);
+                alert('Failed to update todo');
+            }
+        }
+
+        // Delete todo
+        async function deleteTodo(id) {
+            try {
+                await axios.delete(`${API_URL}/todos/${id}`);
+                await fetchTodos();
+            } catch (error) {
+                console.error('Error deleting todo:', error);
+                alert('Failed to delete todo');
+            }
+        }
+
+        // Utility function to escape HTML and prevent XSS
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Initial load
+        fetchTodos();
+    </script>
+</body>
+</html>
