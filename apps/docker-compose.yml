@@ -1,0 +1,26 @@
+services:
+  node-todo:
+    image: node-todo:1.0.1
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    hostname: db
+    image: mariadb:11.7.2-noble
+    ports:
+      - "3306:3306"
+    volumes:
+      - "./node-todo/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql"
+      - "database:/var/lib/mysql"
+    environment:
+      MARIADB_ROOT_PASSWORD: "adalah_password"
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+volumes:
+  database:

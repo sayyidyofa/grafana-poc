@@ -128,6 +128,10 @@
         <!-- Todos will be inserted here -->
     </div>
 
+    <div>
+        <button onclick="triggerError()">Trigger Error</button>
+    </div>
+
     <script>
         const API_URL = '/api';
 
@@ -208,6 +212,13 @@
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
+        }
+
+        function triggerError() {
+            axios.get(`${API_URL}/error`).catch((error) => {
+                console.error('Error fetching todos:', error);
+                alert(`Failed to load todos: ${error}`);
+            })
         }
 
         // Initial load
